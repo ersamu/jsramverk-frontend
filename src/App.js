@@ -1,23 +1,23 @@
-import logo from './logo.svg';
+import React, { useState } from 'react';
 import './App.css';
 
+import "trix";
+import "trix/dist/trix.css";
+
+import { TrixEditor } from "react-trix";
+
 function App() {
+  const [value, setValue] = useState("Skriv något");
+  const printContent = () => {
+    console.log(value);
+  }
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <button className="saveButton" onClick={printContent}>Spara</button>
+        <TrixEditor
+          value = {value}
+          onChange = {setValue}
+        />
     </div>
   );
 }
