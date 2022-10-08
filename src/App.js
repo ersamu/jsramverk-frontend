@@ -1,14 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { io } from "socket.io-client";
 import './App.css';
 import 'trix';
 import 'trix/dist/trix.css';
 import { TrixEditor } from "react-trix";
 import docsModel from './models/docsModel';
 
+let sendToSocket = false;
+
+function changeSendToSocket(value) {
+    sendToSocket = value;
+}
+
 function App() {
-    const [content, setContent] = useState("");
+    const [currentDoc, setCurrentDoc] = useState(null);
+    const [socket, setSocket] = useState(null);
     const [docs, setDocs] = useState([]);
-    const [currentDoc, setCurrentDoc] = useState({});
+    const [content, setContent] = useState("");
     const [title, setTitle] = useState("");
 
     useEffect(() => {
@@ -18,11 +26,57 @@ function App() {
         })();
     }, [currentDoc]);
 
+    useEffect(() => {
+        setSocket(io("https://jsramverk-editor-ersm21.azurewebsites.net"));
+
+        if (socket) {
+            return () => {
+                socket.disconnect();
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        if (socket && sendToSocket && currentDoc) {
+            const data = {
+                _id: currentDoc._id,
+                title: currentDoc.title,
+                content: content
+            };
+            socket.emit("update", data);
+        }
+        changeSendToSocket(true);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [content]);
+
+    useEffect(() => {
+        if (socket) {
+            socket.on("update", (data) => {
+                changeSendToSocket(false);
+                setContent(data);
+                setEditorContent(data);
+            });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [socket]);
+
+    function setEditorContent(selectedDoc) {
+        const element = document.querySelector("trix-editor");
+        element.value = "";
+        element.editor.insertHTML(selectedDoc.content);
+    }
+
     function fetchDoc() {
         const selectedDocId = document.getElementById("selectDoc").value;
         const selectedDoc = docs[selectedDocId];
+        if (currentDoc) {
+            socket.emit("leave", currentDoc["_id"]);
+        }
 
         setCurrentDoc(selectedDoc);
+
+        socket.emit("create", selectedDoc["_id"]);
 
         document.getElementById("saveBtn").style.display = "none";
         document.getElementById("updateBtn").style.display = "block";
@@ -32,12 +86,6 @@ function App() {
             setEditorContent(selectedDoc);
         }
     };
-
-    function setEditorContent(selectedDoc) {
-        const element = document.querySelector("trix-editor");
-        element.value = "";
-        element.editor.insertHTML(selectedDoc.content);
-    }
 
     async function saveDoc() {
         const newDoc = {
@@ -55,7 +103,7 @@ function App() {
     }
 
     return (
-        <div className="app">
+        <div className="App">
             <button onClick={() => window.location.reload()}>Skapa nytt</button>
 
             <select
@@ -81,7 +129,7 @@ function App() {
             <button id="saveBtn" onClick={() => saveDoc()}>Spara</button>
 
             <TrixEditor
-                onChange={setContent}
+            onChange={setContent}
             />
         </div>
     )
