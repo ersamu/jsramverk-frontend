@@ -3,8 +3,13 @@ const docsModel = {
     "http://localhost:1337" :
     "https://jsramverk-editor-ersm21.azurewebsites.net/",
 
-    getAllDocs: async function getAllDocs() {
-        const response = await fetch(`${docsModel.baseUrl}/documents`);
+    getDocs: async function getDocs(token, currentUserId) {
+        const response = await fetch(`${docsModel.baseUrl}/documents/${currentUserId}`, {
+            headers: {
+                "x-access-token": token,
+            }
+        });
+
         const result = await response.json();
         return result.data;
     },
@@ -18,8 +23,7 @@ const docsModel = {
             method: 'POST',
         });
 
-        const result = await response.json();
-        console.log(result);
+        await response.json();
     },
 
     updateDoc: async function updateDoc(doc) {
@@ -31,8 +35,7 @@ const docsModel = {
             method: 'PUT'
         });
 
-        const result = await response.json();
-        console.log(result);
+        await response.json();
     }
 }
 
