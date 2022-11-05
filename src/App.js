@@ -35,7 +35,6 @@ function App() {
 
     async function getAllUsers() {
         if (token) {
-            // dölj användarna som finns i currentdoc.owner
             const allUsers = await authModel.getAllUsers();
             setUsers(allUsers);
         }
