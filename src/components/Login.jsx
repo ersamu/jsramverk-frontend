@@ -3,7 +3,7 @@ import { useState } from 'react';
 import authModel from '../models/authModel';
 import "../App.css";
 
-export default function Login({setToken, setCurrentUserId}) {
+export default function Login({setToken, setCurrentUserId, setCurrentUserEmail}) {
     const [user, setUser] = useState({});
 
     function changeHandler(event) {
@@ -25,6 +25,7 @@ export default function Login({setToken, setCurrentUserId}) {
         if (loginResult.data.token) {
             setCurrentUserId(loginResult.data._id);
             setToken(loginResult.data.token);
+            setCurrentUserEmail(loginResult.data.email);
         }
     }
 
