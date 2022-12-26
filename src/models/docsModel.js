@@ -3,8 +3,8 @@ const docsModel = {
     "http://localhost:1337" :
     "https://jsramverk-editor-ersm21.azurewebsites.net/",
 
-    getDocs: async function getDocs(token, currentUserId) {
-        const response = await fetch(`${docsModel.baseUrl}/documents/${currentUserId}`, {
+    getDocs: async function getDocs(token, currentUserEmail) {
+        const response = await fetch(`${docsModel.baseUrl}/documents/${currentUserEmail}`, {
             headers: {
                 "x-access-token": token,
             }
