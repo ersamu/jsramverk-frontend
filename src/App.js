@@ -4,9 +4,11 @@ import './App.css';
 import 'trix';
 import 'trix/dist/trix.css';
 import { TrixEditor } from "react-trix";
+import { jsPDF } from "jspdf";
 
 import docsModel from "./models/docsModel";
 import authModel from "./models/authModel";
+import emailModel from "./models/emailModel";
 
 import Login from "./components/Login";
 
@@ -25,10 +27,12 @@ function App() {
     const [token, setToken] = useState("");
     const [users, setUsers] = useState([]);
     const [currentUserId, setCurrentUserId] = useState("");
+    const [currentUserEmail, setCurrentUserEmail] = useState("");
+    const [sendToEmail, setSendToEmail] = useState("");
 
     async function getDocs() {
         if (token) {
-            const allDocs = await docsModel.getDocs(token, currentUserId);
+            const allDocs = await docsModel.getDocs(token, currentUserEmail);
             setDocs(allDocs);
         }
     }
@@ -105,7 +109,10 @@ function App() {
         document.getElementById("saveBtn").style.display = "none";
         document.getElementById("updateBtn").style.display = "block";
         document.getElementById("nameLabel").style.display = "none";
+        document.getElementById("emailLabel").style.display = "block";
+        document.getElementById("emailBtn").style.display = "block";
         document.getElementById("selectUser").style.display = "block";
+        document.getElementById("pdfBtn").style.display = "block";
 
         if (selectedDoc) {
             setEditorContent(selectedDoc);
@@ -116,7 +123,7 @@ function App() {
         const selectedUserEmail = document.getElementById("selectUser").value;
         const selectedUser = users[selectedUserEmail];
 
-        currentDoc.allowed_users.push(selectedUser._id);
+        currentDoc.allowed_users.push(selectedUser.email);
         await docsModel.updateDoc(currentDoc);
     };
 
@@ -125,7 +132,7 @@ function App() {
             title: title,
             content: content,
             owner: currentUserId,
-            allowed_users: [currentUserId]
+            allowed_users: [currentUserEmail]
         }
 
         await docsModel.saveDoc(newDoc);
@@ -135,6 +142,34 @@ function App() {
     async function updateDoc() {
         currentDoc.content = content;
         await docsModel.updateDoc(currentDoc);
+    }
+
+    function generatePdf() {
+        const doc = new jsPDF('p', 'pt');
+        doc.html(currentDoc.content, {
+            callback: function(doc) {
+                doc.output("dataurlnewwindow");
+            },
+            margin: 32,
+            width: 500,
+            windowWidth: 500
+        })
+    }
+
+    async function sendEmail() {
+        currentDoc.allowed_users.push(sendToEmail);
+        await docsModel.updateDoc(currentDoc);
+
+        if (sendToEmail.includes("@")) {
+            const newEmail = {
+                from: currentUserEmail,
+                to: sendToEmail,
+                subject: `Jag bjuder in dig till att redigera dokument ${currentDoc.title}`,
+                html: "<a href='https://www.student.bth.se/~ersm21/editor/'>Tryck för att registrera dig</a>"
+            }
+
+            await emailModel.sendEmail(newEmail);
+        }
     }
 
     return (
@@ -161,6 +196,7 @@ function App() {
             </select>
 
             <button style={{display: "none"}} id="updateBtn" onClick={() => updateDoc()}>Uppdatera</button>
+            <button style={{display: "none"}} id="pdfBtn" onClick={generatePdf}>Generera PDF</button>
 
             <form id="nameLabel">
                 <label>Skriv in namn på filen:
@@ -174,12 +210,23 @@ function App() {
 
             <button id="saveBtn" onClick={() => saveDoc()}>Spara</button>
 
+            <form style={{display: "none"}} id="emailLabel">
+                <label>Vem vill du skicka mail inbjudan till?
+                    <input
+                    type="email"
+                    onChange={(event) => setSendToEmail(event.target.value)}
+                   />
+                </label>
+            </form>
+
+            <button style={{display: "none"}} id="emailBtn" onClick={() => sendEmail()}>Skicka inbjudan</button>
+
             <TrixEditor
             onChange={setContent}
             />
             </>
             :
-            <Login setToken={setToken} setCurrentUserId={setCurrentUserId} />
+            <Login setToken={setToken} setCurrentUserId={setCurrentUserId} setCurrentUserEmail={setCurrentUserEmail} />
             }
         </div>
     )
